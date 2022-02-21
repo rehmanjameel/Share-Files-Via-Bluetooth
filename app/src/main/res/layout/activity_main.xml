@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:id="@+id/linearLayout">
+        <TextView
+            android:text="other bluetooth device name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/bluetoothNameTextView"
+            android:textSize="18sp"
+            android:layout_weight="1"/>
+        <TextView
+            android:text="other bluetooth device address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/bluetoothAddressTextView"
+            android:textSize="18sp"
+            android:layout_marginTop="10dp"
+            android:layout_weight="2"/>
+        <TextView
+            android:text="Not connected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/connectedOrNotTextView"
+            android:textSize="24sp"
+            android:layout_marginTop="10dp"
+            tools:layout_editor_absoluteY="141dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="10dp"
+        android:id="@+id/linearLayout3">
+        <Button
+            android:text="Connect to device"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="10dp"
+            android:layout_marginStart="10dp"
+            android:id="@+id/connectToDeviceButton"/>
+        <Button
+            android:text="disconnect"
+            android:enabled="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/disconnectButton"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" android:layout_marginLeft="8dp" android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp" android:layout_marginRight="8dp">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_weight="1"
+                android:textSize="18sp"
+                android:id="@+id/receivedMessageUserTextView"
+                android:text="name: "/>
+
+            <TextView
+                android:id="@+id/receivedMessageTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:layout_weight="1"
+                android:text="messages go here"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="180dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" android:id="@+id/linearLayout5">
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLength="50"
+            android:inputType="textPersonName"
+            android:text="Message"
+            android:ems="10"
+            android:id="@+id/writeMessageEditText"
+            tools:layout_editor_absoluteY="292dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="16dp"
+            android:layout_marginLeft="16dp"/>
+        <Button
+            android:text="send message"
+            android:enabled="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:layout_editor_absoluteY="292dp"
+            tools:layout_editor_absoluteX="231dp"
+            android:id="@+id/sendMessageButton"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
