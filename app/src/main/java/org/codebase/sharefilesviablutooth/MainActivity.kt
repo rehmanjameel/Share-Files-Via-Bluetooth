@@ -62,8 +62,8 @@ class MainActivity : AppCompatActivity() {
             val deviceName = device.name
             val deviceHardwareAddress = device.address // MAC address
 
-            bluetoothNameTextView.text = "Device Name: $deviceName"
-            bluetoothAddressTextView.text = "Device Address: $deviceHardwareAddress"
+            bluetoothNameTextView.text = "$deviceName"
+            bluetoothAddressTextView.text = "$deviceHardwareAddress"
         }
 
         AcceptThread().start()
@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         sendMessageButton.setOnClickListener{
             if (writeMessageEditText.length() > 0) {
                 var connectThreadInstance = ConnectThread(mySelectedBluetoothDevice)
-                connectThreadInstance.writeMessage(writeMessageEditText.getText().toString())
+                connectThreadInstance.writeMessage(writeMessageEditText.text.toString())
                 return@setOnClickListener
             }
             else {
@@ -93,10 +93,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Register for broadcasts when a device is discovered.
-//        connectToDeviceButton.setOnClickListener {
-//            val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-//            registerReceiver(receiver, filter)
-//        }
+        searchDeviceButtonId.setOnClickListener {
+            val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+            registerReceiver(receiver, filter)
+        }
 
     }
 
@@ -123,8 +123,8 @@ class MainActivity : AppCompatActivity() {
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
                     val deviceName = device.name
                     val deviceHardwareAddress = device.address // MAC address
-                    bluetoothNameTextView.text = "Device Name: $deviceName"
-                    bluetoothAddressTextView.text = "Device Address: $deviceHardwareAddress"
+                    searchedDeviceNameId.text = "$deviceName"
+                    searchedDeviceAddressId.text = "$deviceHardwareAddress"
                 }
             }
         }
@@ -181,8 +181,9 @@ class MainActivity : AppCompatActivity() {
                 Log.d("You", "Socket connected")
                 myHandler.post {
                     connectedOrNotTextView.text = "Connected"
-                    connectToDeviceButton.isEnabled = false; disconnectButton.isEnabled =
-                    true; sendMessageButton.isEnabled = true
+                    connectToDeviceButton.isEnabled = false;
+                    disconnectButton.isEnabled = true;
+                    sendMessageButton.isEnabled = true
                 }
             } catch (e1: Exception) {
                 Log.e("You", "Error connecting socket, $e1")
@@ -236,5 +237,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(receiver)
     }
 }
