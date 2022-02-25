@@ -3,11 +3,9 @@ package org.codebase.sharefilesviablutooth
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothSocket
+import android.bluetooth.*
 import android.content.BroadcastReceiver
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -16,6 +14,7 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultCallback
@@ -28,33 +27,51 @@ import java.io.IOException
 import java.util.*
 
 private lateinit var bluetoothAdapter: BluetoothAdapter
-private val uuid: UUID = UUID.fromString("06ae0a74-7bd4-43aa-ab5d-2511f3f6bab1") // GENERATE NEW UUID IF IT WONT WORK
+
+private val uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 private lateinit var mySelectedBluetoothDevice: BluetoothDevice
+private lateinit var bluetoothManager: BluetoothManager
 private lateinit var socket: BluetoothSocket
 private lateinit var myHandler: Handler
+
 @RequiresApi(Build.VERSION_CODES.S)
 class MainActivity : AppCompatActivity() {
+    val requestCode = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        bluetoothManager = applicationContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = bluetoothManager.adapter
 
         if (!bluetoothAdapter.isEnabled) {
             Log.e("Issue", "Bluetooth Not On")
 
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             if (ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 Log.e("Issue", "Bluetooth On")
 
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH,
+                        Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), requestCode)
             }
             launcher.launch(enableBtIntent)
         }
+
+
 
         val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter.bondedDevices
         pairedDevices?.forEach { device ->
@@ -67,13 +84,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         AcceptThread().start()
-        myHandler = Handler()
+        myHandler = Handler(Looper.myLooper()!!)
 
         connectToDeviceButton.setOnClickListener{
             ConnectThread(mySelectedBluetoothDevice).start()
         }
 
-        disconnectButton.setOnClickListener(){
+        disconnectButton.setOnClickListener{
             Log.d("Other phone", "Closing socket and connection")
             socket.close()
             connectedOrNotTextView.text = "Not connected"
@@ -82,7 +99,7 @@ class MainActivity : AppCompatActivity() {
 
         sendMessageButton.setOnClickListener{
             if (writeMessageEditText.length() > 0) {
-                var connectThreadInstance = ConnectThread(mySelectedBluetoothDevice)
+                val connectThreadInstance = ConnectThread(mySelectedBluetoothDevice)
                 connectThreadInstance.writeMessage(writeMessageEditText.text.toString())
                 return@setOnClickListener
             }
@@ -96,9 +113,17 @@ class MainActivity : AppCompatActivity() {
         searchDeviceButtonId.setOnClickListener {
             val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
             registerReceiver(receiver, filter)
+
+            val requestCode = 1;
+            val discoverableIntent: Intent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
+            }
+            launcher.launch(discoverableIntent)
+
         }
 
     }
+
 
     val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ActivityResultCallback { result ->
         if (result.resultCode == RESULT_OK) {
@@ -123,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
                     val deviceName = device.name
                     val deviceHardwareAddress = device.address // MAC address
+                    Log.e("Receive", device.toString())
                     searchedDeviceNameId.text = "$deviceName"
                     searchedDeviceAddressId.text = "$deviceHardwareAddress"
                 }
@@ -131,53 +157,90 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private inner class AcceptThread() : Thread() {
-        private var cancelled: Boolean
-        private val serverSocket: BluetoothServerSocket?
+    private inner class AcceptThread : Thread() {
+//        private var cancelled: Boolean
+//        private val serverSocket: BluetoothServerSocket?
 
-        init {
-            if (bluetoothAdapter.isEnabled) {
-                serverSocket = bluetoothAdapter.listenUsingRfcommWithServiceRecord("test", uuid)
-                cancelled = false
-            } else {
-                serverSocket = null
-                cancelled = true
-            }
+//        init {
+//            if (bluetoothAdapter.isEnabled) {
+//                serverSocket = bluetoothAdapter.listenUsingRfcommWithServiceRecord("test", uuid)
+//                cancelled = false
+//            } else {
+//                serverSocket = null
+//                cancelled = true
+//            }
+//        }
+        private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
+            bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord("BluetoothApp", uuid)
         }
 
         override fun run() {
             var socket: BluetoothSocket
-            while (true) {
-                if (cancelled) {
-                    break
-                }
-                try {
-                    socket = serverSocket!!.accept()
+            var shouldLoop = true
+
+            while (shouldLoop) {
+                val socket: BluetoothSocket? = try {
+                    mmServerSocket?.accept()
                 } catch (e: IOException) {
-                    break
+                    Log.e(TAG, "Socket's accept() method failed", e)
+                    shouldLoop = false
+                    null
                 }
-                if (!cancelled && socket != null) {
-                    Log.d("Other phone", "Connecting")
-                    ConnectedThread(socket).start()
+                socket?.also {
+                    ConnectedThread(it)
+                    mmServerSocket?.close()
+                    shouldLoop = false
                 }
+
             }
         }
+
+        // Closes the connect socket and causes the thread to finish.
+        fun cancel() {
+            try {
+                mmServerSocket?.close()
+            } catch (e: IOException) {
+                Log.e(TAG, "Could not close the connect socket", e)
+            }
+        }
+
     }
 
+    @SuppressLint("MissingPermission")
     private inner class ConnectThread(device: BluetoothDevice) : Thread() {
-        @SuppressLint("MissingPermission")
-        private var newSocket = device.createRfcommSocketToServiceRecord(uuid)
+        private val mmSocket: BluetoothSocket? by lazy(LazyThreadSafetyMode.NONE) {
+            device.createRfcommSocketToServiceRecord(uuid)
+        }
 
-        @SuppressLint("MissingPermission")
+
         override fun run() {
+            Log.e("Socket", "$uuid")
+            Log.e("Socket", "$mmSocket")
+            bluetoothAdapter.cancelDiscovery()
+
             try {
+                if (ActivityCompat.checkSelfPermission(
+                        applicationContext, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this@MainActivity,
+                        arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
+                }
                 Log.d("You", "Connecting socket")
                 myHandler.post {
                     connectedOrNotTextView.text = "Connecting..."
                     connectToDeviceButton.isEnabled = false
                 }
-                socket = newSocket
+//                mmSocket.let { socket->
+//                    Log.e("Socket1", "$socket")
+//
+//
+//
+//                }
+                socket = mmSocket!!
+
                 socket.connect()
+                ConnectedThread(socket)
+
+
                 Log.d("You", "Socket connected")
                 myHandler.post {
                     connectedOrNotTextView.text = "Connected"
@@ -185,6 +248,7 @@ class MainActivity : AppCompatActivity() {
                     disconnectButton.isEnabled = true;
                     sendMessageButton.isEnabled = true
                 }
+
             } catch (e1: Exception) {
                 Log.e("You", "Error connecting socket, $e1")
                 myHandler.post {
@@ -217,12 +281,12 @@ class MainActivity : AppCompatActivity() {
         @SuppressLint("MissingPermission")
         override fun run() {
             val inputStream = socket.inputStream
-            var buffer = ByteArray(1024)
+            val buffer = ByteArray(1024)
             var bytes = 0
             while (true) {
                 try {
                     bytes = inputStream.read(buffer, bytes, 1024 - bytes)
-                    var receivedMessage = String(buffer).substring(0, bytes)
+                    val receivedMessage = String(buffer).substring(0, bytes)
 
                     Log.d("Other phone", "New received message: $receivedMessage")
                     myHandler.post {
